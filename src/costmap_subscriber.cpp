@@ -37,8 +37,9 @@ void CostMapSubscriber::MessageCallBack(const nav_msgs::OccupancyGridPtr &costma
     buff_mutex_.unlock();
 }
 
-void CostMapSubscriber::ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_costmap_msg_ptr) {
+void CostMapSubscriber::ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_costmap_msg_ptr, bool &is_updated) {
     buff_mutex_.lock();
+    is_updated = false;
     if (!deque_costmap_.empty()) {
         deque_costmap_msg_ptr.insert(deque_costmap_msg_ptr.end(),
                                      deque_costmap_.begin(),
@@ -46,6 +47,7 @@ void CostMapSubscriber::ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_
         );
 
         deque_costmap_.clear();
+        is_updated = true;
     }
     buff_mutex_.unlock();
 }

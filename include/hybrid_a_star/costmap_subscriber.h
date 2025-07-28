@@ -40,7 +40,7 @@ class CostMapSubscriber {
 public:
     CostMapSubscriber(ros::NodeHandle &nh, const std::string &topic_name, size_t buff_size);
 
-    void ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_costmap_msg_ptr);
+    void ParseData(std::deque<nav_msgs::OccupancyGridPtr> &deque_costmap_msg_ptr, bool &is_updated);
 
 private:
     void MessageCallBack(const nav_msgs::OccupancyGridPtr &costmap_msg_ptr);

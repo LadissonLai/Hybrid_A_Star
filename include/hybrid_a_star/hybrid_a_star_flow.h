@@ -42,6 +42,7 @@ public:
     explicit HybridAStarFlow(ros::NodeHandle &nh);
 
     void Run();
+    void RunByTopic();
 
 private:
     void InitPoseData();
@@ -66,6 +67,7 @@ private:
     std::shared_ptr<GoalPoseSubscriber2D> goal_pose_sub_ptr_;
 
     ros::Publisher path_pub_;
+    ros::Publisher carla_path_pub_;
     ros::Publisher searched_tree_pub_;
     ros::Publisher vehicle_path_pub_;
 
@@ -79,7 +81,8 @@ private:
 
     ros::Time timestamp_;
 
-    bool has_map_{};
+    bool has_map_updated_{};
+    std::string map_frame_id_{""};
 };
 
 #endif //HYBRID_A_STAR_HYBRID_A_STAR_FLOW_H

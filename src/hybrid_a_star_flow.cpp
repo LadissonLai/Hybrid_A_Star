@@ -60,32 +60,37 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh) {
     double vehicle_length = nh.param("planner/vehicle_length", 4.7);
     double rear_axle_dist = nh.param("planner/rear_axle_dist", 1.3);
 
+    std::string costmap_topic = nh.param<std::string>("planner/costmap_topic", "/map");
+    std::string init_pose_topic = nh.param<std::string>("planner/init_pose_topic", "/initialpose");
+    std::string goal_pose_topic = nh.param<std::string>("planner/goal_pose_topic", "/move_base_simple/goal");
+
     kinodynamic_astar_searcher_ptr_ = std::make_shared<HybridAStar>(
             steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base,
             steering_penalty, reversing_penalty, steering_change_penalty, shot_distance,
             vechile_width, vehicle_length, rear_axle_dist
     );
-    costmap_sub_ptr_ = std::make_shared<CostMapSubscriber>(nh, "/map", 1);
-    init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, "/initialpose", 1);
-    goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, "/move_base_simple/goal", 1);
+    costmap_sub_ptr_ = std::make_shared<CostMapSubscriber>(nh, costmap_topic, 1);
+    init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, init_pose_topic, 1);
+    goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, goal_pose_topic, 1);
 
     path_pub_ = nh.advertise<nav_msgs::Path>("searched_path", 1);
     searched_tree_pub_ = nh.advertise<visualization_msgs::Marker>("searched_tree", 1);
     vehicle_path_pub_ = nh.advertise<visualization_msgs::MarkerArray>("vehicle_path", 1);
 
-    has_map_ = false;
+    has_map_updated_ = false;
 }
 
 void HybridAStarFlow::Run() {
     ReadData();
 
-    if (!has_map_) {
+    if (has_map_updated_) {
         if (costmap_deque_.empty()) {
             return;
         }
 
-        current_costmap_ptr_ = costmap_deque_.front();
-        costmap_deque_.pop_front();
+        current_costmap_ptr_ = costmap_deque_.back();
+        costmap_deque_.pop_back();
+        map_frame_id_ = current_costmap_ptr_->header.frame_id;
 
         const double map_resolution = static_cast<float>(current_costmap_ptr_->info.resolution);
         kinodynamic_astar_searcher_ptr_->Init(
@@ -105,9 +110,10 @@ void HybridAStarFlow::Run() {
                 }
             }
         }
-        has_map_ = true;
+        has_map_updated_ = false;
+        costmap_deque_.clear();
     }
-    costmap_deque_.clear();
+    
 
     while (HasStartPose() && HasGoalPose()) {
         InitPoseData();
@@ -136,7 +142,7 @@ void HybridAStarFlow::Run() {
             geometry_msgs::PoseStamped pose_stamped;
 
             for (const auto &pose: path) {
-                pose_stamped.header.frame_id = "world";
+                pose_stamped.header.frame_id = map_frame_id_;
                 pose_stamped.pose.position.x = pose.x();
                 pose_stamped.pose.position.y = pose.y();
                 pose_stamped.pose.position.z = 0.0;
@@ -146,7 +152,7 @@ void HybridAStarFlow::Run() {
                 path_ros.poses.emplace_back(pose_stamped);
             }
 
-            path_ros.header.frame_id = "world";
+            path_ros.header.frame_id = map_frame_id_;
             path_ros.header.stamp = ros::Time::now();
             static tf::TransformBroadcaster transform_broadcaster;
             for (const auto &pose: path_ros.poses) {
@@ -161,7 +167,7 @@ void HybridAStarFlow::Run() {
                 transform.setRotation(q);
 
                 transform_broadcaster.sendTransform(tf::StampedTransform(transform,
-                                                                         ros::Time::now(), "world",
+                                                                         ros::Time::now(), map_frame_id_,
                                                                          "ground_link")
                 );
 
@@ -175,18 +181,25 @@ void HybridAStarFlow::Run() {
     }
 }
 
-void HybridAStarFlow::ReadData() {
-    costmap_sub_ptr_->ParseData(costmap_deque_);
+void HybridAStarFlow::RunByTopic()
+{
+}
+
+void HybridAStarFlow::ReadData()
+{
+    costmap_sub_ptr_->ParseData(costmap_deque_, has_map_updated_);
     init_pose_sub_ptr_->ParseData(init_pose_deque_);
     goal_pose_sub_ptr_->ParseData(goal_pose_deque_);
 }
 
 void HybridAStarFlow::InitPoseData() {
-    current_init_pose_ptr_ = init_pose_deque_.front();
-    init_pose_deque_.pop_front();
+    current_init_pose_ptr_ = init_pose_deque_.back();
+    init_pose_deque_.pop_back();
+    init_pose_deque_.clear();
 
-    current_goal_pose_ptr_ = goal_pose_deque_.front();
-    goal_pose_deque_.pop_front();
+    current_goal_pose_ptr_ = goal_pose_deque_.back();
+    goal_pose_deque_.pop_back();
+    goal_pose_deque_.clear();
 }
 
 bool HybridAStarFlow::HasGoalPose() {
@@ -202,7 +215,7 @@ void HybridAStarFlow::PublishPath(const VectorVec3d &path) {
 
     geometry_msgs::PoseStamped pose_stamped;
     for (const auto &pose: path) {
-        pose_stamped.header.frame_id = "world";
+        pose_stamped.header.frame_id = map_frame_id_;
         pose_stamped.pose.position.x = pose.x();
         pose_stamped.pose.position.y = pose.y();
         pose_stamped.pose.position.z = 0.0;
@@ -211,7 +224,7 @@ void HybridAStarFlow::PublishPath(const VectorVec3d &path) {
         nav_path.poses.emplace_back(pose_stamped);
     }
 
-    nav_path.header.frame_id = "world";
+    nav_path.header.frame_id = map_frame_id_;
     nav_path.header.stamp = timestamp_;
 
     path_pub_.publish(nav_path);
@@ -228,7 +241,7 @@ void HybridAStarFlow::PublishVehiclePath(const VectorVec3d &path, double width,
             vehicle.action = 3;
         }
 
-        vehicle.header.frame_id = "world";
+        vehicle.header.frame_id = map_frame_id_;
         vehicle.header.stamp = ros::Time::now();
         vehicle.type = visualization_msgs::Marker::CUBE;
         vehicle.id = static_cast<int>(i / vehicle_interval);
@@ -254,7 +267,7 @@ void HybridAStarFlow::PublishVehiclePath(const VectorVec3d &path, double width,
 
 void HybridAStarFlow::PublishSearchedTree(const VectorVec4d &searched_tree) {
     visualization_msgs::Marker tree_list;
-    tree_list.header.frame_id = "world";
+    tree_list.header.frame_id = map_frame_id_;
     tree_list.header.stamp = ros::Time::now();
     tree_list.type = visualization_msgs::Marker::LINE_LIST;
     tree_list.action = visualization_msgs::Marker::ADD;
