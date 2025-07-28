@@ -45,6 +45,7 @@ public:
     HybridAStar(double steering_angle, int steering_angle_discrete_num, double segment_length,
                 int segment_length_discrete_num, double wheel_base, double steering_penalty,
                 double reversing_penalty, double steering_change_penalty, double shot_distance,
+                double vehicle_width, double vehicle_length, double rear_axle_dist,
                 int grid_size_phi = 72);
 
     ~HybridAStar();
@@ -141,6 +142,9 @@ private:
     std::multimap<double, StateNode::Ptr> openset_;
 
     double wheel_base_; //The distance between the front and rear axles
+    double vehicle_length_; 
+    double vehicle_width_;
+    double rear_axle_dist_;
     double segment_length_;
     double move_step_size_;
     double steering_radian_step_size_;

@@ -35,6 +35,7 @@
 HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num, double segment_length,
                          int segment_length_discrete_num, double wheel_base, double steering_penalty,
                          double reversing_penalty, double steering_change_penalty, double shot_distance,
+                         double vehicle_width, double vehicle_length, double rear_axle_dist,
                          int grid_size_phi) {
     wheel_base_ = wheel_base;
     segment_length_ = segment_length;
@@ -47,6 +48,9 @@ HybridAStar::HybridAStar(double steering_angle, int steering_angle_discrete_num,
     steering_change_penalty_ = steering_change_penalty;
     reversing_penalty_ = reversing_penalty;
     shot_distance_ = shot_distance;
+    vehicle_length_ = vehicle_length;
+    vehicle_width_ = vehicle_width;
+    rear_axle_dist_ = rear_axle_dist;
 
     CHECK_EQ(static_cast<float>(segment_length_discrete_num_ * move_step_size_), static_cast<float>(segment_length_))
         << "The segment length must be divisible by the step size. segment_length: "
@@ -65,7 +69,8 @@ HybridAStar::~HybridAStar() {
 
 void HybridAStar::Init(double x_lower, double x_upper, double y_lower, double y_upper,
                        double state_grid_resolution, double map_grid_resolution) {
-    SetVehicleShape(4.7, 2.0, 1.3);
+    //SetVehicleShape(4.7, 2.0, 1.3);
+    SetVehicleShape(vehicle_length_, vehicle_width_, rear_axle_dist_);
 
     map_x_lower_ = x_lower;
     map_x_upper_ = x_upper;

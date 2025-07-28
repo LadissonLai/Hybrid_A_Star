@@ -56,9 +56,14 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh) {
     double reversing_penalty = nh.param("planner/reversing_penalty", 2.0);
     double shot_distance = nh.param("planner/shot_distance", 5.0);
 
+    double vechile_width = nh.param("planner/vechile_width", 2.0);
+    double vehicle_length = nh.param("planner/vehicle_length", 4.7);
+    double rear_axle_dist = nh.param("planner/rear_axle_dist", 1.3);
+
     kinodynamic_astar_searcher_ptr_ = std::make_shared<HybridAStar>(
             steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base,
-            steering_penalty, reversing_penalty, steering_change_penalty, shot_distance
+            steering_penalty, reversing_penalty, steering_change_penalty, shot_distance,
+            vechile_width, vehicle_length, rear_axle_dist
     );
     costmap_sub_ptr_ = std::make_shared<CostMapSubscriber>(nh, "/map", 1);
     init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, "/initialpose", 1);

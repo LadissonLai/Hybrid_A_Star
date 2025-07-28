@@ -23,6 +23,9 @@
         <param name="planner/reversing_penalty" value="3.0"/>
         <param name="planner/steering_change_penalty" value="2.0"/>
         <param name="planner/shot_distance" value="5.0"/>
+        <param name="planner/vehicle_length" value="4.7"/>
+        <param name="planner/vehicle_width" value="2.0"/>
+        <param name="planner/rear_axle_dist" value="1.3"/>
     </node>
 
 </launch>
