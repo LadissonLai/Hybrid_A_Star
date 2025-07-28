@@ -78,6 +78,15 @@ roslaunch hybrid_a_star run_hybrid_a_star.launch
 
 > If your start and end points are too close to obstacles, the collision detection mechanism may be triggered and no feasible paths will be searched and displayed
 
+## 5. ParkMan interface
+```
+/parkman/planning/input/goal
+/parkman/planning/input/occmap
+/parkman/planning/input/start
+/parkman/planning/output/searched_tree
+/parkman/planning/output/trajectory
+/parkman/planning/output/vehicle_path
+```
 ## 5. References
 
 (1). [Practical Search Techniques in Path Planning for Autonomous Driving](https://ai.stanford.edu/~ddolgov/papers/dolgov_gpp_stair08.pdf)
