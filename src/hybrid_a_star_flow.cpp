@@ -60,9 +60,12 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh) {
     double vehicle_length = nh.param("planner/vehicle_length", 4.7);
     double rear_axle_dist = nh.param("planner/rear_axle_dist", 1.3);
 
-    std::string costmap_topic = nh.param<std::string>("planner/costmap_topic", "/map");
-    std::string init_pose_topic = nh.param<std::string>("planner/init_pose_topic", "/initialpose");
-    std::string goal_pose_topic = nh.param<std::string>("planner/goal_pose_topic", "/move_base_simple/goal");
+    std::string costmap_topic = nh.param<std::string>("parkman/planning/input/occmap", "/map");
+    std::string init_pose_topic = nh.param<std::string>("parkman/planning/input/start", "/initialpose");
+    std::string goal_pose_topic = nh.param<std::string>("parkman/planning/input/goal", "/move_base_simple/goal");
+    ROS_INFO("Costmap topic: %s", costmap_topic.c_str());
+    ROS_INFO("Init pose topic: %s", init_pose_topic.c_str());
+    ROS_INFO("Goal pose topic: %s", goal_pose_topic.c_str());
 
     kinodynamic_astar_searcher_ptr_ = std::make_shared<HybridAStar>(
             steering_angle, steering_angle_discrete_num, segment_length, segment_length_discrete_num, wheel_base,
@@ -73,9 +76,9 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh) {
     init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, init_pose_topic, 1);
     goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, goal_pose_topic, 1);
 
-    path_pub_ = nh.advertise<nav_msgs::Path>("searched_path", 1);
-    searched_tree_pub_ = nh.advertise<visualization_msgs::Marker>("searched_tree", 1);
-    vehicle_path_pub_ = nh.advertise<visualization_msgs::MarkerArray>("vehicle_path", 1);
+    path_pub_ = nh.advertise<nav_msgs::Path>("/parkman/planning/output/trajectory", 1);
+    searched_tree_pub_ = nh.advertise<visualization_msgs::Marker>("/parkman/planning/output/searched_tree", 1);
+    vehicle_path_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/parkman/planning/output/vehicle_path", 1);
 
     has_map_updated_ = false;
 }
@@ -105,15 +108,15 @@ void HybridAStarFlow::Run() {
         unsigned int map_h = std::floor(current_costmap_ptr_->info.height);
         for (unsigned int w = 0; w < map_w; ++w) {
             for (unsigned int h = 0; h < map_h; ++h) {
-                if (current_costmap_ptr_->data[h * current_costmap_ptr_->info.width + w]) {
+                if (current_costmap_ptr_->data[h * current_costmap_ptr_->info.width + w] > 50) {
                     kinodynamic_astar_searcher_ptr_->SetObstacle(w, h);
                 }
             }
         }
         has_map_updated_ = false;
         costmap_deque_.clear();
+        ROS_INFO("costmap has updated!!!!!!!!!!");
     }
-    
 
     while (HasStartPose() && HasGoalPose()) {
         InitPoseData();
@@ -131,48 +134,55 @@ void HybridAStarFlow::Run() {
                 current_goal_pose_ptr_->pose.position.y,
                 goal_yaw
         );
-
+        ROS_INFO("start planning..........");
+        ROS_INFO("start state: (%.2f, %.2f, %.2f)", start_state.x(), start_state.y(), start_state.z());
+        ROS_INFO("goal state: (%.2f, %.2f, %.2f)", goal_state.x(), goal_state.y(), goal_state.z());
         if (kinodynamic_astar_searcher_ptr_->Search(start_state, goal_state)) {
             auto path = kinodynamic_astar_searcher_ptr_->GetPath();
             PublishPath(path);
             PublishVehiclePath(path, 4.0, 2.0, 5u);
             PublishSearchedTree(kinodynamic_astar_searcher_ptr_->GetSearchedTree());
+            ROS_INFO("PATH FOUND!");
 
-            nav_msgs::Path path_ros;
-            geometry_msgs::PoseStamped pose_stamped;
+            // nav_msgs::Path path_ros;
+            // geometry_msgs::PoseStamped pose_stamped;
 
-            for (const auto &pose: path) {
-                pose_stamped.header.frame_id = map_frame_id_;
-                pose_stamped.pose.position.x = pose.x();
-                pose_stamped.pose.position.y = pose.y();
-                pose_stamped.pose.position.z = 0.0;
+            // for (const auto &pose: path) {
+            //     pose_stamped.header.frame_id = map_frame_id_;
+            //     pose_stamped.pose.position.x = pose.x();
+            //     pose_stamped.pose.position.y = pose.y();
+            //     pose_stamped.pose.position.z = 0.0;
 
-                pose_stamped.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pose.z());
+            //     pose_stamped.pose.orientation = tf::createQuaternionMsgFromRollPitchYaw(0, 0, pose.z());
 
-                path_ros.poses.emplace_back(pose_stamped);
-            }
+            //     path_ros.poses.emplace_back(pose_stamped);
+            // }
 
-            path_ros.header.frame_id = map_frame_id_;
-            path_ros.header.stamp = ros::Time::now();
-            static tf::TransformBroadcaster transform_broadcaster;
-            for (const auto &pose: path_ros.poses) {
-                tf::Transform transform;
-                transform.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, 0.0));
+            // path_ros.header.frame_id = map_frame_id_;
+            // path_ros.header.stamp = ros::Time::now();
+            // static tf::TransformBroadcaster transform_broadcaster;
+            // for (const auto &pose: path_ros.poses) {
+            //     tf::Transform transform;
+            //     transform.setOrigin(tf::Vector3(pose.pose.position.x, pose.pose.position.y, 0.0));
 
-                tf::Quaternion q;
-                q.setX(pose.pose.orientation.x);
-                q.setY(pose.pose.orientation.y);
-                q.setZ(pose.pose.orientation.z);
-                q.setW(pose.pose.orientation.w);
-                transform.setRotation(q);
+            //     tf::Quaternion q;
+            //     q.setX(pose.pose.orientation.x);
+            //     q.setY(pose.pose.orientation.y);
+            //     q.setZ(pose.pose.orientation.z);
+            //     q.setW(pose.pose.orientation.w);
+            //     transform.setRotation(q);
 
-                transform_broadcaster.sendTransform(tf::StampedTransform(transform,
-                                                                         ros::Time::now(), map_frame_id_,
-                                                                         "ground_link")
-                );
+            //     transform_broadcaster.sendTransform(tf::StampedTransform(transform,
+            //                                                              ros::Time::now(), map_frame_id_,
+            //                                                              "ground_link")
+            //     );
 
-                ros::Duration(0.05).sleep();
-            }
+            //     ros::Duration(0.05).sleep();
+            // }
+            
+        }
+        else {
+            ROS_WARN("No path found from start to goal.");
         }
 
         // debug
@@ -195,11 +205,11 @@ void HybridAStarFlow::ReadData()
 void HybridAStarFlow::InitPoseData() {
     current_init_pose_ptr_ = init_pose_deque_.back();
     init_pose_deque_.pop_back();
-    init_pose_deque_.clear();
+    //init_pose_deque_.clear();
 
     current_goal_pose_ptr_ = goal_pose_deque_.back();
     goal_pose_deque_.pop_back();
-    goal_pose_deque_.clear();
+    //goal_pose_deque_.clear();
 }
 
 bool HybridAStarFlow::HasGoalPose() {

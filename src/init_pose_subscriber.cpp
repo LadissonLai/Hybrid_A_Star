@@ -39,6 +39,7 @@ void InitPoseSubscriber2D::MessageCallBack(
         const geometry_msgs::PoseWithCovarianceStampedPtr &init_pose_ptr
 ) {
     buff_mutex_.lock();
+    ROS_INFO("Received initial pose message with frame_id: %s", init_pose_ptr->header.frame_id.c_str());
     init_poses_.emplace_back(init_pose_ptr);
     buff_mutex_.unlock();
 }

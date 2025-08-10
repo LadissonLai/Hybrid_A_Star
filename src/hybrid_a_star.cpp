@@ -711,8 +711,28 @@ VectorVec3d HybridAStar::GetPath() const {
 }
 
 void HybridAStar::Reset() {
+    // if (state_node_map_) {
+    //     for (int i = 0; i < STATE_GRID_SIZE_X_; ++i) {
+    //         if (state_node_map_[i] == nullptr)
+    //             continue;
+
+    //         for (int j = 0; j < STATE_GRID_SIZE_Y_; ++j) {
+    //             if (state_node_map_[i][j] == nullptr)
+    //                 continue;
+
+    //             for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k) {
+    //                 if (state_node_map_[i][j][k] != nullptr) {
+    //                     delete state_node_map_[i][j][k];
+    //                     state_node_map_[i][j][k] = nullptr;
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
+    
     if (state_node_map_) {
         for (int i = 0; i < STATE_GRID_SIZE_X_; ++i) {
+
             if (state_node_map_[i] == nullptr)
                 continue;
 
@@ -726,6 +746,24 @@ void HybridAStar::Reset() {
                         state_node_map_[i][j][k] = nullptr;
                     }
                 }
+                delete[] state_node_map_[i][j];
+                state_node_map_[i][j] = nullptr;
+            }
+            delete[] state_node_map_[i];
+            state_node_map_[i] = nullptr;
+        }
+
+        delete[] state_node_map_;
+        state_node_map_ = nullptr;
+    }
+
+    state_node_map_ = new StateNode::Ptr **[STATE_GRID_SIZE_X_];
+    for (int i = 0; i < STATE_GRID_SIZE_X_; ++i) {
+        state_node_map_[i] = new StateNode::Ptr *[STATE_GRID_SIZE_Y_];
+        for (int j = 0; j < STATE_GRID_SIZE_Y_; ++j) {
+            state_node_map_[i][j] = new StateNode::Ptr[STATE_GRID_SIZE_PHI_];
+            for (int k = 0; k < STATE_GRID_SIZE_PHI_; ++k) {
+                state_node_map_[i][j][k] = nullptr;
             }
         }
     }

@@ -34,6 +34,7 @@ CostMapSubscriber::CostMapSubscriber(ros::NodeHandle &nh, const std::string &top
 void CostMapSubscriber::MessageCallBack(const nav_msgs::OccupancyGridPtr &costmap_msg_ptr) {
     buff_mutex_.lock();
     deque_costmap_.emplace_back(costmap_msg_ptr);
+    ROS_INFO("Received costmap message with frame_id: %s", costmap_msg_ptr->header.frame_id.c_str());
     buff_mutex_.unlock();
 }
 

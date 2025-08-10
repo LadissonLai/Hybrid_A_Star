@@ -14,7 +14,7 @@
     <!-- <node pkg="map_server" type="map_server" name="map_server" args="$(find hybrid_a_star)/maps/map.yaml"/> -->
 
     <node pkg="hybrid_a_star" type="run_hybrid_astar" name="run_hybrid_astar" output="screen">
-        <param name="planner/steering_angle" value="15.0"/>
+        <param name="planner/steering_angle" value="30.0"/>
         <param name="planner/steering_angle_discrete_num" value="1"/>
         <param name="planner/wheel_base" value="2.0"/>
         <param name="planner/segment_length" value="1.6"/>
@@ -26,12 +26,12 @@
         <param name="planner/vehicle_length" value="4.7"/>
         <param name="planner/vehicle_width" value="2.0"/>
         <param name="planner/rear_axle_dist" value="1.3"/>
-        <param name="planner/costmap_topic" value="/parkman/planning/input/occmap"/>
-        <param name="planner/init_pose_topic" value="/parkman/planning/input/start"/> 
-        <param name="planner/goal_pose_topic" value="/parkman/planning/input/goal"/>
-        <remap from="~searched_path" to="/parkman/planning/output/trajectory"/>
-        <remap from="~searched_tree" to="/parkman/planning/output/searched_tree"/>
-        <remap from="~vehicle_path" to="/parkman/planning/output/vehicle_path"/>
+        <param name="parkman/planning/input/occmap" value="/map"/>
+        <param name="parkman/planning/input/start" value="/parkman/planning/input/start"/>
+        <param name="parkman/planning/input/goal" value="/parkman/planning/input/goal"/>
+        <remap from="~/parkman/planning/output/trajectory" to="/parkman/planning/output/trajectory"/>
+        <remap from="~/parkman/planning/output/searched_tree" to="/parkman/planning/output/searched_tree"/>
+        <remap from="~/parkman/planning/output/vehicle_path" to="/parkman/planning/output/vehicle_path"/>
     </node>
 
 </launch>
