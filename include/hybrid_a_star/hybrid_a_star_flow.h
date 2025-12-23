@@ -32,6 +32,7 @@
 #include "costmap_subscriber.h"
 #include "init_pose_subscriber.h"
 #include "goal_pose_subscriber.h"
+#include <std_msgs/Bool.h>
 
 #include <ros/ros.h>
 
@@ -66,8 +67,8 @@ private:
     std::shared_ptr<InitPoseSubscriber2D> init_pose_sub_ptr_;
     std::shared_ptr<GoalPoseSubscriber2D> goal_pose_sub_ptr_;
 
+    ros::Publisher planning_result_state_pub_;
     ros::Publisher path_pub_;
-    ros::Publisher carla_path_pub_;
     ros::Publisher searched_tree_pub_;
     ros::Publisher vehicle_path_pub_;
 

@@ -76,6 +76,8 @@ HybridAStarFlow::HybridAStarFlow(ros::NodeHandle &nh) {
     init_pose_sub_ptr_ = std::make_shared<InitPoseSubscriber2D>(nh, init_pose_topic, 1);
     goal_pose_sub_ptr_ = std::make_shared<GoalPoseSubscriber2D>(nh, goal_pose_topic, 1);
 
+
+    planning_result_state_pub_ = nh.advertise<std_msgs::Bool>("/parkman/planning/output/result_state", 1);
     path_pub_ = nh.advertise<nav_msgs::Path>("/parkman/planning/output/trajectory", 1);
     searched_tree_pub_ = nh.advertise<visualization_msgs::Marker>("/parkman/planning/output/searched_tree", 1);
     vehicle_path_pub_ = nh.advertise<visualization_msgs::MarkerArray>("/parkman/planning/output/vehicle_path", 1);
@@ -134,6 +136,7 @@ void HybridAStarFlow::Run() {
                 current_goal_pose_ptr_->pose.position.y,
                 goal_yaw
         );
+        std_msgs::Bool result_state;
         ROS_INFO("start planning..........");
         ROS_INFO("start state: (%.2f, %.2f, %.2f)", start_state.x(), start_state.y(), start_state.z());
         ROS_INFO("goal state: (%.2f, %.2f, %.2f)", goal_state.x(), goal_state.y(), goal_state.z());
@@ -179,10 +182,13 @@ void HybridAStarFlow::Run() {
 
             //     ros::Duration(0.05).sleep();
             // }
-            
+            result_state.data = true;
+            planning_result_state_pub_.publish(result_state);
         }
         else {
             ROS_WARN("No path found from start to goal.");
+            result_state.data = false;
+            planning_result_state_pub_.publish(result_state);
         }
 
         // debug
